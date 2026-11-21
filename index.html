@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>작곡가 탐색하기 | 서양음악사 & AI 카툰 창작 스튜디오</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .font-serif-title {
+            font-family: 'Playfair Display', 'Noto Sans KR', serif;
+        }
+        .tab-active {
+            border-bottom: 3px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 700;
+        }
+        .cartoon-panel {
+            aspect-ratio: 1 / 1;
+            transition: all 0.2s ease;
+        }
+        .cartoon-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white; }
+            .print-shadow-none { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white shadow-lg no-print">
+        <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-indigo-400 text-xs font-bold tracking-wider uppercase mb-1">
+                    <span>고1 음악 감상 프로젝트</span>
+                    <span>•</span>
+                    <span>AI 융합 수업 워크북</span>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-2">
+                    🎼 작곡가 탐색하기 <span class="text-indigo-400 font-serif-title italic text-xl md:text-2xl">AI Cartoon Studio</span>
+                </h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="resetAllData()" class="px-3 py-2 text-xs bg-slate-800 hover:bg-red-900/60 text-slate-300 hover:text-red-200 rounded-lg border border-slate-700 transition">
+                    🗑️ 초기화
+                </button>
+                <button onclick="window.print()" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow transition flex items-center gap-1.5">
+                    🖨️ 포트폴리오 인쇄 / PDF 저장
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-white text-slate-600 border-b border-slate-200">
+            <div class="max-w-6xl mx-auto px-4 flex overflow-x-auto">
+                <button onclick="switchTab('tab1')" id="btn-tab1" class="tab-btn tab-active px-5 py-3.5 text-sm whitespace-nowrap transition">
+                    1단계: 시대별 음악 탐구 (2~5차시)
+                </button>
+                <button onclick="switchTab('tab2')" id="btn-tab2" class="tab-btn px-5 py-3.5 text-sm whitespace-nowrap transition">
+                    2단계: 작곡가 & 키워드 심층 탐구 (6차시)
+                </button>
+                <button onclick="switchTab('tab3')" id="btn-tab3" class="tab-btn px-5 py-3.5 text-sm whitespace-nowrap transition">
+                    3단계: AI 카툰 프롬프트 생성기 (7차시)
+                </button>
+                <button onclick="switchTab('tab4')" id="btn-tab4" class="tab-btn px-5 py-3.5 text-sm whitespace-nowrap transition">
+                    4단계: 카툰 보드 & 상호 비평 (7~8차시)
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
+
+        <!-- Student Info Bar -->
+        <section class="bg-white rounded-xl p-4 mb-6 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 print-shadow-none">
+            <div class="flex flex-wrap items-center gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 block">학번 / 이름</label>
+                    <input type="text" id="studentInfo" oninput="saveData()" placeholder="예: 10315 김음악" class="mt-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 block">선택한 시대</label>
+                    <select id="selectedEra" onchange="updateEraSuggestions(); saveData();" class="mt-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="바로크 시대">바로크 시대 (1600~1750)</option>
+                        <option value="고전 시대">고전 시대 (1750~1820)</option>
+                        <option value="낭만 시대" selected>낭만 시대 (1820~1900)</option>
+                        <option value="근현대">근현대 (1900~현재)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 block">탐구 작곡가</label>
+                    <input type="text" id="composerName" oninput="saveData()" placeholder="예: 프레데리크 쇼팽" class="mt-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="text-xs text-slate-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100 no-print">
+                💡 모든 입력 내용은 브라우저에 <strong>자동 저장</strong>됩니다. 생성된 프롬프트를 복사해 <strong>Gemini</strong>나 <strong>ChatGPT</strong>에 붙여넣으세요!
+            </div>
+        </section>
+
+        <!-- TAB 1: 시대별 음악 탐구 (2~5차시) -->
+        <div id="tab1" class="tab-content space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">🎧 2~5차시: 시대별 감상 및 AI 양식 탐구 질문 생성기</h2>
+                <p class="text-sm text-slate-600 mb-6">수업 시간에 감상한 곡의 음악적 특징과 시대적 배경을 AI 챗봇에게 심층 질문할 수 있는 프롬프트를 만들어줍니다.</p>
+
+                <div class="grid md:grid-cols-4 gap-4 mb-6">
+                    <button onclick="selectPeriodCard('baroque')" class="period-card text-left p-4 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 transition" id="card-baroque">
+                        <span class="text-xs font-bold text-indigo-600">2차시</span>
+                        <h3 class="font-bold text-base mt-1">바로크 시대</h3>
+                        <p class="text-xs text-slate-500 mt-1">대위법, 통주저음, 화려한 장식음 (바흐, 비발디)</p>
+                    </button>
+                    <button onclick="selectPeriodCard('classical')" class="period-card text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition" id="card-classical">
+                        <span class="text-xs font-bold text-slate-500">3차시</span>
+                        <h3 class="font-bold text-base mt-1">고전 시대</h3>
+                        <p class="text-xs text-slate-500 mt-1">소나타 형식, 균형미, 명확한 화성 (모차르트, 베토벤)</p>
+                    </button>
+                    <button onclick="selectPeriodCard('romantic')" class="period-card text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition" id="card-romantic">
+                        <span class="text-xs font-bold text-slate-500">4차시</span>
+                        <h3 class="font-bold text-base mt-1">낭만 시대</h3>
+                        <p class="text-xs text-slate-500 mt-1">극적인 감정 표현, 문학적 서사 (쇼팽, 슈베르트)</p>
+                    </button>
+                    <button onclick="selectPeriodCard('modern')" class="period-card text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition" id="card-modern">
+                        <span class="text-xs font-bold text-slate-500">5차시</span>
+                        <h3 class="font-bold text-base mt-1">근현대</h3>
+                        <p class="text-xs text-slate-500 mt-1">조성 탈피, 불협화음, 실험성 (드뷔시, 스트라빈스키)</p>
+                    </button>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">감상한 대표 곡명</label>
+                            <input type="text" id="listenPiece" value="비발디 - 사계 중 '봄' 1악장" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">내가 발견한 음악적 특징 (선율, 리듬, 악기, 분위기 등)</label>
+                            <textarea id="listenObservation" rows="3" placeholder="예: 바이올린 독주와 합주가 서로 주고받으며 새소리를 묘사하는 듯한 화려한 꾸밈음이 들린다." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm">바이올린 독주와 합주가 서로 주고받으며 새소리를 묘사하는 듯한 화려한 장식음이 인상적이다.</textarea>
+                        </div>
+                        <button onclick="generatePeriodPrompt()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm shadow transition">
+                            ✨ AI 감상 심층 탐구 프롬프트 생성하기
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-bold text-indigo-700">📋 AI 챗봇 질문용 프롬프트</span>
+                            <button onclick="copyText('periodPromptOutput')" class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2.5 py-1 rounded transition">
+                                복사하기
+                            </button>
+                        </div>
+                        <textarea id="periodPromptOutput" readonly rows="7" class="w-full flex-grow p-3 bg-slate-900 text-emerald-300 font-mono text-xs rounded-lg leading-relaxed focus:outline-none"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: 작곡가 & 키워드 심층 탐구 (6차시) -->
+        <div id="tab2" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">🔍 6차시: 나만의 작곡가 선정 & 핵심 키워드 3가지 도출</h2>
+                <p class="text-sm text-slate-600 mb-6">선택한 작곡가의 삶과 음악을 대표하는 <strong>핵심 키워드 3개</strong>를 정하고, AI 챗봇과 대화하며 카툰의 뼈대(기-승-전-결)를 설계합니다.</p>
+
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+                        <label class="block text-xs font-extrabold text-indigo-700 uppercase mb-1">핵심 키워드 1 (생애/성격)</label>
+                        <input type="text" id="kw1" oninput="saveData()" placeholder="예: 망명자의 그리움" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm font-semibold">
+                    </div>
+                    <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+                        <label class="block text-xs font-extrabold text-indigo-700 uppercase mb-1">핵심 키워드 2 (음악적 특징)</label>
+                        <input type="text" id="kw2" oninput="saveData()" placeholder="예: 피아노의 시인" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm font-semibold">
+                    </div>
+                    <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+                        <label class="block text-xs font-extrabold text-indigo-700 uppercase mb-1">핵심 키워드 3 (시대적 맥락/기여)</label>
+                        <input type="text" id="kw3" oninput="saveData()" placeholder="예: 폴란드 민족주의" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm font-semibold">
+                    </div>
+                </div>
+
+                <!-- Step 6 Prompt Box -->
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-6">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">🤖 6차시용 AI 생애·시대 배경 심층 탐구 & 스토리 뼈대 프롬프트</h3>
+                            <p class="text-xs text-slate-500">작곡가 이름과 키워드 3개를 입력한 뒤 아래 버튼을 눌러 프롬프트를 복사하세요.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="generateResearchPrompt()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg transition">
+                                🔄 프롬프트 업데이트
+                            </button>
+                            <button onclick="copyText('researchPromptOutput')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition">
+                                📋 프롬프트 복사
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="researchPromptOutput" readonly rows="6" class="w-full p-3 bg-slate-900 text-amber-300 font-mono text-xs rounded-lg leading-relaxed"></textarea>
+                </div>
+
+                <!-- Storyboard Outline -->
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 mb-3">📝 나의 카툰 스토리 개요 (기 - 승 - 전 - 결)</h3>
+                    <div class="grid md:grid-cols-4 gap-4">
+                        <div class="p-3 bg-white border border-slate-300 rounded-xl">
+                            <span class="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 text-xs font-bold rounded mb-2">1컷 [기] 배경 및 등장</span>
+                            <textarea id="story1" oninput="saveData()" rows="3" placeholder="작곡가가 살던 시대적 배경과 첫 등장 장면" class="w-full text-xs border-0 focus:ring-0 p-0 resize-none"></textarea>
+                        </div>
+                        <div class="p-3 bg-white border border-slate-300 rounded-xl">
+                            <span class="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded mb-2">2컷 [승] 고뇌와 창작</span>
+                            <textarea id="story2" oninput="saveData()" rows="3" placeholder="키워드 1, 2가 드러나는 사건이나 작곡 과정" class="w-full text-xs border-0 focus:ring-0 p-0 resize-none"></textarea>
+                        </div>
+                        <div class="p-3 bg-white border border-slate-300 rounded-xl">
+                            <span class="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded mb-2">3컷 [전] 음악적 절정</span>
+                            <textarea id="story3" oninput="saveData()" rows="3" placeholder="대표곡의 특징이 폭발하는 극적인 장면" class="w-full text-xs border-0 focus:ring-0 p-0 resize-none"></textarea>
+                        </div>
+                        <div class="p-3 bg-white border border-slate-300 rounded-xl">
+                            <span class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded mb-2">4컷 [결] 음악사적 기여</span>
+                            <textarea id="story4" oninput="saveData()" rows="3" placeholder="키워드 3과 연결된 후대에 미친 영향" class="w-full text-xs border-0 focus:ring-0 p-0 resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: AI 카툰 프롬프트 생성기 (7차시) -->
+        <div id="tab3" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">🎨 7차시: AI 이미지 생성 카툰 프롬프트 빌더</h2>
+                <p class="text-sm text-slate-600 mb-6">Gemini(Imagen 3) 또는 ChatGPT(DALL·E 3)에서 <strong>일관된 캐릭터와 화풍</strong>으로 4~6컷 카툰 이미지를 생성하기 위한 맞춤형 프롬프트를 설계합니다.</p>
+
+                <div class="grid md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">카툰 컷 수 구성</label>
+                        <select id="cutCount" onchange="generateCartoonPrompts()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium">
+                            <option value="4컷 (기-승-전-결 웹툰 형식)" selected>4컷 (기-승-전-결 표준)</option>
+                            <option value="6컷 (심층 서사 만화 형식)">6컷 (심층 스토리 확장)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">카툰 그림체(화풍) 선택</label>
+                        <select id="artStyle" onchange="generateCartoonPrompts()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium">
+                            <option value="따뜻한 수채화 감성의 그래픽 노블 일러스트 스타일">따뜻한 수채화 그래픽 노블</option>
+                            <option value="깔끔한 선화와 생동감 있는 표정의 현대 한국 웹툰 스타일" selected>깔끔한 현대 한국 웹툰 스타일</option>
+                            <option value="고전 명화 유화 질감을 살린 드라마틱한 만화 스타일">클래식 유화풍 드라마틱 코믹스</option>
+                            <option value="귀엽고 친근한 2D 플랫 벡터 캐릭터 인스타툰 스타일">귀여운 2D 인스타툰 스타일</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">작곡가 외모/복장 고정 묘사 (일관성 유지용)</label>
+                        <input type="text" id="characterDesc" oninput="generateCartoonPrompts()" placeholder="예: 19세기 검은 연미복, 곱슬머리, 창백하고 섬세한 표정" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <!-- Prompt Output Cards -->
+                <div class="space-y-4">
+                    <div class="bg-indigo-50/70 p-5 rounded-xl border border-indigo-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-extrabold text-indigo-900">① [통합형] 한 번에 4컷/6컷 만화 시트 생성 프롬프트 (Gemini / ChatGPT 추천)</span>
+                            <button onclick="copyText('cartoonMasterPrompt')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                                📋 통합 프롬프트 복사
+                            </button>
+                        </div>
+                        <textarea id="cartoonMasterPrompt" readonly rows="8" class="w-full p-3 bg-slate-900 text-sky-300 font-mono text-xs rounded-lg leading-relaxed"></textarea>
+                    </div>
+
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-bold text-slate-800">② [보완형] 이미지가 어색할 때 사용하는 수정(프롬프트 보완) 템플릿</span>
+                            <button onclick="copyText('cartoonRefinePrompt')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition">
+                                📋 보완 프롬프트 복사
+                            </button>
+                        </div>
+                        <textarea id="cartoonRefinePrompt" readonly rows="4" class="w-full p-3 bg-slate-800 text-slate-200 font-mono text-xs rounded-lg leading-relaxed"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: 카툰 포트폴리오 & 상호 비평 (7~8차시) -->
+        <div id="tab4" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 print-shadow-none">
+                <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">🖼️ 7~8차시: 나의 AI 작곡가 카툰 포트폴리오 & 비평</h2>
+                        <p class="text-sm text-slate-600 mt-1">AI로 생성한 카툰 이미지를 각 컷에 업로드하고, 대사/해설과 음악사적 비평을 정리하여 발표하세요.</p>
+                    </div>
+                    <div class="flex items-center gap-2 no-print">
+                        <label class="text-xs font-bold text-slate-600">컷 수 선택:</label>
+                        <select id="boardCutMode" onchange="toggleCutPanels()" class="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-slate-50">
+                            <option value="4">4컷 포트폴리오</option>
+                            <option value="6">6컷 포트폴리오</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Cartoon Panels Grid -->
+                <div id="cartoonGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Panel 1 -->
+                    <div class="cartoon-panel bg-slate-50 rounded-xl border-2 border-slate-300 p-4 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="px-2.5 py-0.5 bg-slate-800 text-white text-xs font-bold rounded-full">#1컷</span>
+                            <label class="cursor-pointer text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded font-semibold no-print">
+                                📷 이미지 넣기
+                                <input type="file" accept="image/*" onchange="previewImage(event, 1)" class="hidden">
+                            </label>
+                        </div>
+                        <div id="img-box-1" class="flex-grow bg-white rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden min-h-[220px] mb-3">
+                            <span class="text-xs text-slate-400 text-center px-4">AI가 생성한 1번째 컷 이미지를<br>업로드하세요</span>
+                        </div>
+                        <input type="text" id="caption-1" oninput="saveData()" placeholder="1컷 대사 또는 장면 해설 입력..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+
+                    <!-- Panel 2 -->
+                    <div class="cartoon-panel bg-slate-50 rounded-xl border-2 border-slate-300 p-4 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="px-2.5 py-0.5 bg-slate-800 text-white text-xs font-bold rounded-full">#2컷</span>
+                            <label class="cursor-pointer text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded font-semibold no-print">
+                                📷 이미지 넣기
+                                <input type="file" accept="image/*" onchange="previewImage(event, 2)" class="hidden">
+                            </label>
+                        </div>
+                        <div id="img-box-2" class="flex-grow bg-white rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden min-h-[220px] mb-3">
+                            <span class="text-xs text-slate-400 text-center px-4">AI가 생성한 2번째 컷 이미지를<br>업로드하세요</span>
+                        </div>
+                        <input type="text" id="caption-2" oninput="saveData()" placeholder="2컷 대사 또는 장면 해설 입력..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+
+                    <!-- Panel 3 -->
+                    <div class="cartoon-panel bg-slate-50 rounded-xl border-2 border-slate-300 p-4 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="px-2.5 py-0.5 bg-slate-800 text-white text-xs font-bold rounded-full">#3컷</span>
+                            <label class="cursor-pointer text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded font-semibold no-print">
+                                📷 이미지 넣기
+                                <input type="file" accept="image/*" onchange="previewImage(event, 3)" class="hidden">
+                            </label>
+                        </div>
+                        <div id="img-box-3" class="flex-grow bg-white rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden min-h-[220px] mb-3">
+                            <span class="text-xs text-slate-400 text-center px-4">AI가 생성한 3번째 컷 이미지를<br>업로드하세요</span>
+                        </div>
+                        <input type="text" id="caption-3" oninput="saveData()" placeholder="3컷 대사 또는 장면 해설 입력..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+
+                    <!-- Panel 4 -->
+                    <div class="cartoon-panel bg-slate-50 rounded-xl border-2 border-slate-300 p-4 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="px-2.5 py-0.5 bg-slate-800 text-white text-xs font-bold rounded-full">#4컷</span>
+                            <label class="cursor-pointer text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded font-semibold no-print">
+                                📷 이미지 넣기
+                                <input type="file" accept="image/*" onchange="previewImage(event, 4)" class="hidden">
+                            </label>
+                        </div>
+                        <div id="img-box-4" class="flex-grow bg-white rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden min-h-[220px] mb-3">
+                            <span class="text-xs text-slate-400 text-center px-4">AI가 생성한 4번째 컷 이미지를<br>업로드하세요</span>
+                        </div>
+                        <input type="text" id="caption-4" oninput="saveData()" placeholder="4컷 대사 또는 장면 해설 입력..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+
+                    <!-- Panel 5 (Optional) -->
+                    <div id="panel-wrap-5" class="hidden cartoon-panel bg-slate-50 rounded-xl border-2 border-slate-300 p-4 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="px-2.5 py-0.5 bg-slate-800 text-white text-xs font-bold rounded-full">#5컷</span>
+                            <label class="cursor-pointer text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded font-semibold no-print">
+                                📷 이미지 넣기
+                                <input type="file" accept="image/*" onchange="previewImage(event, 5)" class="hidden">
+                            </label>
+                        </div>
+                        <div id="img-box-5" class="flex-grow bg-white rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden min-h-[220px] mb-3">
+                            <span class="text-xs text-slate-400 text-center px-4">AI가 생성한 5번째 컷 이미지를<br>업로드하세요</span>
+                        </div>
+                        <input type="text" id="caption-5" oninput="saveData()" placeholder="5컷 대사 또는 장면 해설 입력..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+
+                    <!-- Panel 6 (Optional) -->
+                    <div id="panel-wrap-6" class="hidden cartoon-panel bg-slate-50 rounded-xl border-2 border-slate-300 p-4 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="px-2.5 py-0.5 bg-slate-800 text-white text-xs font-bold rounded-full">#6컷</span>
+                            <label class="cursor-pointer text-xs bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded font-semibold no-print">
+                                📷 이미지 넣기
+                                <input type="file" accept="image/*" onchange="previewImage(event, 6)" class="hidden">
+                            </label>
+                        </div>
+                        <div id="img-box-6" class="flex-grow bg-white rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden min-h-[220px] mb-3">
+                            <span class="text-xs text-slate-400 text-center px-4">AI가 생성한 6번째 컷 이미지를<br>업로드하세요</span>
+                        </div>
+                        <input type="text" id="caption-6" oninput="saveData()" placeholder="6컷 대사 또는 장면 해설 입력..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+                </div>
+
+                <!-- Critical Reflection & Peer Review Section (Achievement Standard [12음02-03]) -->
+                <div class="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100 space-y-4">
+                    <h3 class="text-base font-bold text-indigo-950">✍️ 작품 비평 및 성찰 노트 (성취기준 [12음02-03] 맥락·기능·기여)</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">1. 작곡가의 음악적 특징과 시대적 맥락·음악사적 기여 (발표 원고)</label>
+                            <textarea id="critiqueEssay" oninput="saveData()" rows="4" placeholder="이 작곡가가 살았던 시대의 사회적 배경, 음악의 기능, 그리고 서양음악사에 남긴 혁신과 기여를 카툰 스토리와 연결해 서술하세요." class="w-full p-3 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">2. 동료 작품 상호 비평 및 프로젝트 소감 (8차시 마무리)</label>
+                            <textarea id="peerFeedback" oninput="saveData()" rows="4" placeholder="친구들의 발표를 듣고 인상 깊었던 다른 시대 작곡가의 특징과, AI와 협업하며 느낀 점을 기록하세요." class="w-full p-3 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        ✅ 클립보드에 복사되었습니다! AI 챗봇에 붙여넣으세요.
+    </div>
+
+    <script>
+        const periodPresets = {
+            baroque: {
+                era: '바로크 시대',
+                piece: "비발디 - 사계 중 '봄' 1악장 (또는 바흐 - 파사칼리아)",
+                obs: "독주 악기와 합주가 대비를 이루며 화려한 장식음과 대위법적 선율이 얽히는 느낌이 든다.",
+                focus: "통주저음(Basso Continuo), 대위법적 구조, 바로크 시대의 궁정 및 교회 음악의 기능"
+            },
+            classical: {
+                era: '고전 시대',
+                piece: "모차르트 - 아이네 클라이네 나흐트무지크 (또는 베토벤 교향곡 5번 '운명')",
+                obs: "주제 선율이 명확하고 균형 잡혀 있으며, 제시부-발전부-재현부로 이어지면서 주제가 극적으로 변주된다.",
+                focus: "소나타 형식의 구조적 균형미, 고전주의의 객관적 형식미와 화성적 명확성"
+            },
+            romantic: {
+                era: '낭만 시대',
+                piece: "쇼팽 - 환상즉흥곡 (또는 슈베르트 - 마왕)",
+                obs: "극적인 선율의 강약 변화가 크고, 작곡가의 내면적인 고뇌나 시적인 이야기가 소리로 생생하게 전해진다.",
+                focus: "개인주의적 감정 표현, 문학·시적 서사와의 결합, 당대 예술가의 사회적 고뇌"
+            },
+            modern: {
+                era: '근현대',
+                piece: "드뷔시 - 목신의 오후에의 전주곡 (또는 스트라빈스키 - 봄의 제전)",
+                obs: "전통적인 화음과 달리 불협화음과 변박자가 자주 등장하고, 악기의 독특한 음색과 색채감이 돋보인다.",
+                focus: "기존 조성과 형식의 탈피(인상주의, 원시주의, 무조음악 등), 전쟁·과학기술 발전이 음악에 미친 충격"
+            }
+        };
+
+        let currentPeriodKey = 'baroque';
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+            document.getElementById('btn-' + tabId).classList.add('tab-active');
+
+            if (tabId === 'tab2') generateResearchPrompt();
+            if (tabId === 'tab3') generateCartoonPrompts();
+        }
+
+        function selectPeriodCard(key) {
+            currentPeriodKey = key;
+            document.querySelectorAll('.period-card').forEach(card => {
+                card.classList.remove('border-2', 'border-indigo-600', 'bg-indigo-50/50');
+                card.classList.add('border', 'border-slate-200');
+            });
+            const activeCard = document.getElementById('card-' + key);
+            activeCard.classList.remove('border', 'border-slate-200');
+            activeCard.classList.add('border-2', 'border-indigo-600', 'bg-indigo-50/50');
+
+            const preset = periodPresets[key];
+            document.getElementById('listenPiece').value = preset.piece;
+            document.getElementById('listenObservation').value = preset.obs;
+            generatePeriodPrompt();
+        }
+
+        function generatePeriodPrompt() {
+            const preset = periodPresets[currentPeriodKey];
+            const piece = document.getElementById('listenPiece').value.trim() || preset.piece;
+            const obs = document.getElementById('listenObservation').value.trim() || preset.obs;
+
+            const prompt = `당신은 고등학교 음악 교사이자 서양음악사 전문가입니다.
+현재 나는 고등학생으로서 [${preset.era}] 음악을 감상하고 분석하는 수업을 듣고 있습니다.
+
+- 감상한 곡: ${piece}
+- 내가 발견한 음악적 특징: "${obs}"
+
+위 내용을 바탕으로 다음 3가지를 고등학생 눈높이에서 알기 쉽게 설명해 주세요.
+1. 내가 발견한 특징이 [${preset.era}]의 핵심 양식(${preset.focus})과 어떻게 연결되는지 분석해 주세요.
+2. 이 곡의 악기 편성과 형식적 구성(선율, 화성, 리듬의 변화)에서 놓치지 말아야 할 감상 포인트 2가지를 알려주세요.
+3. 이 음악이 탄생했던 당대의 사회·문화적 배경과 음악의 역할을 한 문단으로 요약해 주세요.`;
+
+            document.getElementById('periodPromptOutput').value = prompt;
+        }
+
+        function updateEraSuggestions() {
+            const era = document.getElementById('selectedEra').value;
+            const compInput = document.getElementById('composerName');
+            if (!compInput.value) {
+                if (era.includes('바로크')) compInput.placeholder = '예: 요한 제바스티안 바흐, 안토니오 비발디';
+                if (era.includes('고전')) compInput.placeholder = '예: 볼프강 아마데우스 모차르트, 루트비히 판 베토벤';
+                if (era.includes('낭만')) compInput.placeholder = '예: 프레데리크 쇼팽, 프란츠 슈베르트, 프란츠 리스트';
+                if (era.includes('근현대')) compInput.placeholder = '예: 클로드 드뷔시, 이고르 스트라빈스키, 아르놀트 쇤베르크';
+            }
+            generateResearchPrompt();
+            generateCartoonPrompts();
+        }
+
+        function generateResearchPrompt() {
+            const era = document.getElementById('selectedEra').value;
+            const composer = document.getElementById('composerName').value.trim() || '[선택한 작곡가 이름]';
+            const kw1 = document.getElementById('kw1').value.trim() || '[키워드1]';
+            const kw2 = document.getElementById('kw2').value.trim() || '[키워드2]';
+            const kw3 = document.getElementById('kw3').value.trim() || '[키워드3]';
+
+            const prompt = `나는 고등학교 1학년 음악 수업에서 서양음악사 작곡가 탐색 및 AI 카툰 제작 프로젝트를 진행하고 있습니다.
+
+- 선택한 시대: ${era}
+- 탐구 작곡가: ${composer}
+- 내가 선정한 핵심 키워드 3가지: #${kw1}, #${kw2}, #${kw3}
+
+다음 조건에 맞추어 심층 탐구 자료와 4컷 카툰 스토리 뼈대를 만들어 주세요.
+1. [생애와 시대적 맥락]: 선정한 3가지 키워드가 ${composer}의 실제 삶, 당대 사회·문화적 배경과 어떻게 연결되는지 구체적인 일화와 함께 설명해 주세요.
+2. [음악 양식과 기여]: ${composer}의 대표작에 나타난 음악적 특징(선율, 화성, 형식, 음색 등)과 서양음악사에 기여한 점을 분석해 주세요.
+3. [4컷 카툰 스토리보드(기-승-전-결)]: 위 내용을 바탕으로 고등학생이 공감할 수 있는 4컷 만화 줄거리(각 컷의 상황 묘사 + 핵심 대사 1줄)를 작성해 주세요.`;
+
+            document.getElementById('researchPromptOutput').value = prompt;
+        }
+
+        function generateCartoonPrompts() {
+            const era = document.getElementById('selectedEra').value;
+            const composer = document.getElementById('composerName').value.trim() || '서양음악 작곡가';
+            const kw1 = document.getElementById('kw1').value.trim() || '예술적 고뇌';
+            const kw2 = document.getElementById('kw2').value.trim() || '독창적 음악 양식';
+            const kw3 = document.getElementById('kw3').value.trim() || '음악사적 혁신';
+            const cutCount = document.getElementById('cutCount').value;
+            const artStyle = document.getElementById('artStyle').value;
+            const charDesc = document.getElementById('characterDesc').value.trim() || `${era} 복장을 입은 ${composer}의 특징적인 외모`;
+
+            const s1 = document.getElementById('story1').value.trim() || `${era}의 배경 속에서 악상을 떠올리는 ${composer}의 등장`;
+            const s2 = document.getElementById('story2').value.trim() || `'${kw1}'의 시련이나 영감 속에서 밤새 작곡에 몰두하는 모습`;
+            const s3 = document.getElementById('story3').value.trim() || `'${kw2}'의 특징이 살아있는 대표곡을 연주하며 청중을 감동시키는 절정`;
+            const s4 = document.getElementById('story4').value.trim() || `'${kw3}'을 이루며 후대 음악사에 빛나는 유산을 남기는 마지막 장면`;
+
+            const masterPrompt = `다음 설정으로 ${composer}의 삶과 음악을 담은 [${cutCount}] 만화 이미지를 그려주세요.
+
+[화풍 및 구도]
+- 그림체: ${artStyle}
+- 화면 구성: 1:1 정사각형 비율의 패널들이 깔끔한 흰색 여백으로 나뉜 만화 페이지 구성
+- 주인공 외형 고정(일관성 유지): 모든 컷에서 주인공(${composer})은 '${charDesc}'의 모습으로 통일되게 그려주세요.
+- 핵심 주제 키워드: ${kw1}, ${kw2}, ${kw3}
+- 주의사항: 이미지 내부에 깨진 글자나 불필요한 텍스트가 들어가지 않도록 표정, 행동, 시대적 소품(악기, 악보, 배경)을 중심으로 시각적으로 표현해 주세요.
+
+[각 컷의 장면 묘사]
+- 1컷 (기): ${s1}
+- 2컷 (승): ${s2}
+- 3컷 (전): ${s3}
+- 4컷 (결): ${s4}`;
+
+            const refinePrompt = `방금 생성한 ${composer} 카툰 이미지에서 다음 부분을 수정하여 다시 그려주세요:
+1. 주인공의 얼굴과 복장(${charDesc})이 모든 컷에서 동일한 인물로 보이도록 일관성을 맞춰주세요.
+2. ${era}의 시대적 분위기와 음악적 소품(당대 악기, 자필 악보 등)이 더 선명하게 드러나도록 배경을 보완해 주세요.
+3. 말풍선 속 깨진 글씨는 모두 제거하고, 인물의 감정과 행동이 잘 보이게 클로즈업과 풀샷 구도를 적절히 섞어주세요.`;
+
+            document.getElementById('cartoonMasterPrompt').value = masterPrompt;
+            document.getElementById('cartoonRefinePrompt').value = refinePrompt;
+        }
+
+        function toggleCutPanels() {
+            const mode = document.getElementById('boardCutMode').value;
+            const p5 = document.getElementById('panel-wrap-5');
+            const p6 = document.getElementById('panel-wrap-6');
+            if (mode === '6') {
+                p5.classList.remove('hidden');
+                p6.classList.remove('hidden');
+            } else {
+                p5.classList.add('hidden');
+                p6.classList.add('hidden');
+            }
+        }
+
+        function previewImage(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const box = document.getElementById('img-box-' + index);
+                box.innerHTML = `<img src="${e.target.result}" alt="카툰 ${index}컷" class="w-full h-full object-contain">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function copyText(elementId) {
+            const el = document.getElementById(elementId);
+            el.select();
+            el.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(el.value).then(() => {
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        const fieldsToSave = [
+            'studentInfo', 'selectedEra', 'composerName',
+            'kw1', 'kw2', 'kw3',
+            'story1', 'story2', 'story3', 'story4',
+            'characterDesc',
+            'caption-1', 'caption-2', 'caption-3', 'caption-4', 'caption-5', 'caption-6',
+            'critiqueEssay', 'peerFeedback'
+        ];
+
+        function saveData() {
+            const data = {};
+            fieldsToSave.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) data[id] = el.value;
+            });
+            localStorage.setItem('composerCartoonWorkbook_v1', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const raw = localStorage.getItem('composerCartoonWorkbook_v1');
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+                fieldsToSave.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && data[id] !== undefined) el.value = data[id];
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function resetAllData() {
+            if (confirm('작성한 모든 탐구 내용과 스토리보드를 초기화할까요?')) {
+                localStorage.removeItem('composerCartoonWorkbook_v1');
+                location.reload();
+            }
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            generatePeriodPrompt();
+            generateResearchPrompt();
+            generateCartoonPrompts();
+        });
+    </script>
+</body>
+</html>
